@@ -1,0 +1,176 @@
+import { useState, useEffect } from 'react';
+import api from '../utils/api';
+
+export default function InlineFrameScoring({ match, isExpanded, onToggle }) {
+    const [frames, setFrames] = useState([]);
+    const [homePlayers, setHomePlayers] = useState([]);
+    const [awayPlayers, setAwayPlayers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (isExpanded && frames.length === 0) {
+            fetchData();
+        }
+    }, [isExpanded]);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+
+            const [homePlayersRes, awayPlayersRes, framesRes] = await Promise.all([
+                api.get(`/frames/teams/${match.home_team_id}/players`),
+                api.get(`/frames/teams/${match.away_team_id}/players`),
+                api.get(`/frames/${match.id}/frames`)
+            ]);
+
+            setHomePlayers(homePlayersRes.data.players);
+            setAwayPlayers(awayPlayersRes.data.players);
+
+            // Initialize 25 frames
+            const existingFrames = framesRes.data.frames;
+            const initialFrames = Array.from({ length: 25 }, (_, i) => {
+                const existing = existingFrames.find(f => f.frame_number === i + 1);
+                return existing || {
+                    frame_number: i + 1,
+                    home_player_id: null,
+                    away_player_id: null,
+                    winner_player_id: null
+                };
+            });
+            setFrames(initialFrames);
+        } catch (error) {
+            console.error('Error fetching frame data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFrameChange = (frameNumber, field, value) => {
+        setFrames(prev => prev.map(f =>
+            f.frame_number === frameNumber
+                ? { ...f, [field]: value === '' ? null : parseInt(value) }
+                : f
+        ));
+    };
+
+    const handleSave = async () => {
+        try {
+            const incompleteFrames = frames.filter(f =>
+                !f.home_player_id || !f.away_player_id || !f.winner_player_id
+            );
+
+            if (incompleteFrames.length > 0) {
+                alert(`Please complete all 25 frames. ${incompleteFrames.length} frames are incomplete.`);
+                return;
+            }
+
+            setSaving(true);
+            await api.post(`/frames/${match.id}/frames`, { frames });
+            alert('Frame results saved successfully!');
+            window.location.reload(); // Refresh to show updated scores
+        } catch (error) {
+            console.error('Error saving frames:', error);
+            alert('Failed to save frame results: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (!isExpanded) return null;
+
+    if (loading) {
+        return (
+            <div className="px-4 py-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-turquoise-500 mx-auto"></div>
+                <p className="text-gray-400 mt-2 text-sm">Loading frames...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="px-4 pb-4 bg-navy-800">
+            <div className="space-y-1">
+                {frames.map((frame) => (
+                    <div key={frame.frame_number} className="grid grid-cols-12 gap-2 items-center py-2 border-b border-navy-700 text-sm">
+                        {/* Frame Number */}
+                        <div className="col-span-1 text-gray-400 font-semibold">
+                            {frame.frame_number}
+                        </div>
+
+                        {/* Home Player */}
+                        <div className="col-span-4">
+                            <select
+                                value={frame.home_player_id || ''}
+                                onChange={(e) => handleFrameChange(frame.frame_number, 'home_player_id', e.target.value)}
+                                className="w-full bg-navy-700 text-white text-xs px-2 py-1 rounded border border-navy-600 focus:border-turquoise-500 focus:outline-none"
+                            >
+                                <option value="">Select Player</option>
+                                {homePlayers.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.first_name} {p.last_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Home Score */}
+                        <div className="col-span-1 text-center">
+                            <span className={`font-bold ${frame.winner_player_id && homePlayers.some(p => p.id === frame.winner_player_id) ? 'text-turquoise-500' : 'text-gray-500'}`}>
+                                {frame.winner_player_id && homePlayers.some(p => p.id === frame.winner_player_id) ? '1' : '0'}
+                            </span>
+                        </div>
+
+                        {/* Dropdown for winner */}
+                        <div className="col-span-1 text-center">
+                            <select
+                                value={frame.winner_player_id || ''}
+                                onChange={(e) => handleFrameChange(frame.frame_number, 'winner_player_id', e.target.value)}
+                                disabled={!frame.home_player_id || !frame.away_player_id}
+                                className="w-full bg-navy-700 text-white text-xs px-1 py-1 rounded border border-navy-600 focus:border-turquoise-500 focus:outline-none disabled:opacity-50"
+                            >
+                                <option value="">-</option>
+                                {frame.home_player_id && <option value={frame.home_player_id}>H</option>}
+                                {frame.away_player_id && <option value={frame.away_player_id}>A</option>}
+                            </select>
+                        </div>
+
+                        {/* Away Score */}
+                        <div className="col-span-1 text-center">
+                            <span className={`font-bold ${frame.winner_player_id && awayPlayers.some(p => p.id === frame.winner_player_id) ? 'text-blue-500' : 'text-gray-500'}`}>
+                                {frame.winner_player_id && awayPlayers.some(p => p.id === frame.winner_player_id) ? '1' : '0'}
+                            </span>
+                        </div>
+
+                        {/* Away Player */}
+                        <div className="col-span-4">
+                            <select
+                                value={frame.away_player_id || ''}
+                                onChange={(e) => handleFrameChange(frame.frame_number, 'away_player_id', e.target.value)}
+                                className="w-full bg-navy-700 text-white text-xs px-2 py-1 rounded border border-navy-600 focus:border-turquoise-500 focus:outline-none"
+                            >
+                                <option value="">Select Player</option>
+                                {awayPlayers.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.first_name} {p.last_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Save Button */}
+            <div className="mt-4 flex justify-end">
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-4 py-2 bg-turquoise-500 hover:bg-turquoise-600 text-white text-sm font-semibold rounded transition-colors disabled:opacity-50"
+                >
+                    {saving ? 'Saving...' : 'Save All Frames'}
+                </button>
+            </div>
+        </div>
+    );
+}

@@ -1,0 +1,26 @@
+divisions.id: NO, integer, nextval('divisions_id_seq'::regclass)
+divisions.season_id: NO, integer, null
+divisions.name: NO, character varying, null
+seasons.id: NO, integer, nextval('seasons_id_seq'::regclass)
+seasons.league_id: NO, integer, null
+seasons.name: NO, character varying, null
+seasons.start_date: NO, date, null
+seasons.end_date: NO, date, null
+seasons.is_active: YES, boolean, false
+tournaments.id: NO, integer, nextval('tournaments_id_seq'::regclass)
+tournaments.season_id: NO, integer, null
+tournaments.name: NO, character varying, null
+tournaments.description: YES, text, null
+tournaments.tournament_type: NO, character varying, null
+tournaments.game_format: YES, character varying, '8ball'::character varying
+tournaments.status: YES, character varying, 'registration'::character varying
+tournaments.registration_deadline: YES, timestamp without time zone, null
+tournaments.start_date: YES, date, null
+tournaments.end_date: YES, date, null
+tournaments.max_participants: YES, integer, null
+tournaments.entry_fee: YES, numeric, 0.00
+tournaments.prize_pool: YES, numeric, 0.00
+tournaments.venue_id: YES, integer, null
+tournaments.created_by: YES, integer, null
+tournaments.created_at: YES, timestamp without time zone, CURRENT_TIMESTAMP
+tournaments.updated_at: YES, timestamp without time zone, CURRENT_TIMESTAMP

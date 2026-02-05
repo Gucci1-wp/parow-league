@@ -1,0 +1,16 @@
+--- USERS SCHEMA ---
+id: Nullable=NO, DataType=integer, Default=nextval('users_id_seq'::regclass)
+username: Nullable=NO, DataType=character varying, Default=null
+email: Nullable=NO, DataType=character varying, Default=null
+password_hash: Nullable=NO, DataType=character varying, Default=null
+role: Nullable=NO, DataType=character varying, Default='player'::character varying
+first_name: Nullable=YES, DataType=character varying, Default=null
+last_name: Nullable=YES, DataType=character varying, Default=null
+is_active: Nullable=YES, DataType=boolean, Default=true
+created_at: Nullable=YES, DataType=timestamp without time zone, Default=CURRENT_TIMESTAMP
+phone: Nullable=YES, DataType=character varying, Default=null
+last_login: Nullable=YES, DataType=timestamp without time zone, Default=null
+failed_login_attempts: Nullable=YES, DataType=integer, Default=0
+account_locked_until: Nullable=YES, DataType=timestamp without time zone, Default=null
+email_verified: Nullable=YES, DataType=boolean, Default=false
+two_factor_enabled: Nullable=YES, DataType=boolean, Default=false
